@@ -1,5 +1,9 @@
 import mongoose from "mongoose";
-import { GenderEnums,ProviderEnums } from "../../common/index.js";
+import {
+  GenderEnums,
+  ProviderEnums,
+  UserRoleEnums,
+} from "../../common/index.js";
 const userSchema = new mongoose.Schema({
   firstName: {
     type: String,
@@ -34,7 +38,14 @@ const userSchema = new mongoose.Schema({
     enum: Object.values(ProviderEnums),
     default: ProviderEnums.System,
   },
-});
+  role: {
+    type: String,
+    enum: Object.values(UserRoleEnums),
+    default: UserRoleEnums.User,
+  },
+  
+}, {   toJSON: { virtuals: true },   
+    toObject: { virtuals: true },});
 
 userSchema.virtual('userName').set(function (value) {
   let [firstName, lastName] = value.split(' ');
