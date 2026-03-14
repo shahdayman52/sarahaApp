@@ -11,10 +11,21 @@ export const signupSchema = joi.object({
     .required()
     .pattern(/^[a-zA-Z0-9@$*&]{6,30}$/),
   gender: joi.string().optional(),
-  users: joi.array().items(joi.string()).required()
+  shareProfileName: joi.string().required(),
 });
 
 export const loginSchema = joi.object({
   email: joi.string().email().required(),
   password: joi.string().min(3).max(30).required().alphanum(),
+});
+
+export const fileSchema = joi.object({
+  fieldname: joi.string().required(),
+  originalname: joi.string().required(),
+  encoding: joi.string().required(),
+  mimetype: joi.string().required(),
+  destination: joi.string().required(),
+  filename: joi.string().required(),
+  path: joi.string().required(),
+  size: joi.number().required,
 });

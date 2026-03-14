@@ -54,3 +54,13 @@ export const findOneAndDelete = async ({
   let doc = model.findOneAndDelete(filter, options);
   return await doc;
 };
+export const findOneAndUpdate = async ({
+  model,
+  filter = {},
+  update = {},
+  options = {},
+}) =>{
+  let doc = model.findOneAndUpdate(filter, update, options);
+  return await doc;
+
+}

@@ -1,7 +1,5 @@
 import { userModel, profileViewModel } from "../../database/index.js";
-import {
-  findById,
-} from "../../database/index.js";
+import { findById } from "../../database/index.js";
 import mongoose from "mongoose";
 import { BadRequestException } from "../../common/index.js";
 
@@ -23,9 +21,10 @@ export const visitProfile = async (viewerId, profileOwnerId) => {
 };
 
 export const getProfileViews = async (profileOwnerId) => {
-  const views = await profileViewModel.findAll({
-    profileOwnerId: new mongoose.Types.ObjectId(profileOwnerId),
-  })
+  const views = await profileViewModel
+    .findAll({
+      profileOwnerId: new mongoose.Types.ObjectId(profileOwnerId),
+    })
     .populate("viewerId", "firstName lastName")
     .sort({ createdAt: -1 });
 

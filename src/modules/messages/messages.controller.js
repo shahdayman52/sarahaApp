@@ -9,14 +9,17 @@ import { BadRequestException, successResponse } from "../../common/index.js";
 import { validation } from "../../common/utils/validation/validation.js";
 import { createMessageSchema } from "./messages.validation.js";
 import { auth } from "../../common/middleware/auth.js";
+// import { upload} from "../../common/middleware/multer.js";
+
 
 const router = Router();
 
 router.post(
   "/send-message/:id",
+  //  upload().single("image"),
   validation(createMessageSchema),
   async (req, res) => {
-    let data = await sendMessage(req.body, req.params.id);
+    let data = await sendMessage(req.body, req.params.id,req.file);
     successResponse({
       res,
       message: "message sent successfully",

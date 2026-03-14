@@ -58,63 +58,79 @@
 //   });
 // };
 
-import { env } from "../../../../config/env.service.js"
+import { env } from "../../../../config/env.service.js";
 
-export const ErrorResponse = ({ status = 400, message = "Something went wrong", extra = undefined } = {}) => {
-    throw new Error(message, { cause: { status, extra } })
-}
+export const ErrorResponse = ({
+  status = 400,
+  message = "Something went wrong",
+  extra = undefined,
+} = {}) => {
+  throw new Error(message, { cause: { status, extra } });
+};
 
-export const BadRequestException = ({ message = "BadRequestException", extra = undefined } = {}) => {
-    return ErrorResponse({
-        status: 400,
-        message,
-        extra
-    })
-}
+export const BadRequestException = ({
+  message = "BadRequestException",
+  extra = undefined,
+} = {}) => {
+  return ErrorResponse({
+    status: 400,
+    message,
+    extra,
+  });
+};
 
-export const NotFoundException = ({ message = "NotFoundException", extra = undefined } = {}) => {
-    return ErrorResponse({
-        status: 404,
-        message,
-        extra
-    }
-    )
-}
+export const NotFoundException = ({
+  message = "NotFoundException",
+  extra = undefined,
+} = {}) => {
+  return ErrorResponse({
+    status: 404,
+    message,
+    extra,
+  });
+};
 
-export const ConflictException = ({ message = "ConflictException", extra = undefined } = {}) => {
-    return ErrorResponse({
-        status: 409,
-        message,
-        extra
-    })
-}
+export const ConflictException = ({
+  message = "ConflictException",
+  extra = undefined,
+} = {}) => {
+  return ErrorResponse({
+    status: 409,
+    message,
+    extra,
+  });
+};
 
-export const UnauthorizedException = ({ message = "UnauthorizedException", extra = undefined } = {}) => {
-    return ErrorResponse({
-        status: 401,
-        message,
-        extra
-    })
-}
+export const UnauthorizedException = ({
+  message = "UnauthorizedException",
+  extra = undefined,
+} = {}) => {
+  return ErrorResponse({
+    status: 401,
+    message,
+    extra,
+  });
+};
 
-export const ForbiddenException = ({ message = "ForbiddenException", extra = undefined } = {}) => {
-    return ErrorResponse({
-        status: 403,
-        message,
-        extra
-    })
-}
+export const ForbiddenException = ({
+  message = "ForbiddenException",
+  extra = undefined,
+} = {}) => {
+  return ErrorResponse({
+    status: 403,
+    message,
+    extra,
+  });
+};
 
 export const globalErrorHandler = (error, req, res, next) => {
-    const status = error.status ? error.status : error.cause ? error.cause.status : 500;
-    const mood = env.mood == 'dev'
-    const deafultMessage = 'Something went wrong'
-    const displayErrorMessage = error.message || deafultMessage
-    // const extra = error.cause.extra || {};
-    res.status(status).json({
-        status,
-        stack: mood ? error.stack : null,
-        errorMessage: mood ? displayErrorMessage : deafultMessage,
-        // extra: extra ? extra : null
-    });
-}
+  const status = error.cause?.status || error.status || 500;
+  const isDev = env.mood === "dev";
+
+  res.status(status).json({
+    status,
+    message: error.message || "Something went wrong",
+    stack: isDev ? error.stack : undefined,
+    extra: isDev ? error.cause?.extra : undefined,
+  });
+};

@@ -6,14 +6,19 @@ import {
   findOne,
   findOneAndDelete,
 } from "../../database/index.js";
-import { userModel,messageModel } from "../../database/index.js";
+import { userModel, messageModel } from "../../database/index.js";
+import { env } from "../../../config/index.js";
 
-export const sendMessage = async (messageData, userId) => {
+export const sendMessage = async (messageData, userId, file) => {
   let existUser = await findById({ model: userModel, id: userId });
   if (!existUser) {
     throw BadRequestException("invalid user id");
   }
-  let { message, image } = messageData;
+  let { message } = messageData;
+  let image = "";
+  if (file) {
+    image = `${env.BASE_URL}/Uploads/${file.filename}`;
+  }
   let addedMessage = await insertOne({
     model: messageModel,
     data: {
