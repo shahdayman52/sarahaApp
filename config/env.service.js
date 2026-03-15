@@ -13,6 +13,7 @@ const userRefreshSignature = process.env.JWT_USER_REFRESH_SIGNATURE;
 const BASE_URL = process.env.BASE_URL;
 const email = process.env.EMAIL;
 const emailPassword = process.env.EMAIL_PASSWORD;
+const redis_uri = process.env.REDIS_URI;
 
 export const env = {
   mongoURL,
@@ -27,4 +28,5 @@ export const env = {
   BASE_URL,
   email,
   emailPassword,
+  redis_uri,
 };

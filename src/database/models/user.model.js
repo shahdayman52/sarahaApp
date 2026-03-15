@@ -73,6 +73,10 @@ const userSchema = new mongoose.Schema(
     otpExpires: {
       type: Date,
     },
+    isVerfied: {
+      type: Boolean,
+      default: false,
+    },
   },
   { toJSON: { virtuals: true }, toObject: { virtuals: true } },
 );

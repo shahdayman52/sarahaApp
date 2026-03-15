@@ -11,7 +11,7 @@ export const sendEmail = async (to, subject, text) => {
   });
 
   const mailOptions = {
-    from: env.email,
+    from:"Saraha App",
     to,
     subject,
     text,

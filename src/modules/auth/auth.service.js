@@ -12,6 +12,7 @@ import { userModel } from "../../database/index.js";
 import {
   findById,
   findOne,
+  findOneAndUpdate,
   insertOne,
 } from "../../database/database.service.js";
 import { generateHash, compareHash } from "../../common/index.js";
@@ -20,6 +21,15 @@ import { env } from "../../../config/index.js";
 import { OAuth2Client } from "google-auth-library";
 import { generateOTP } from "../../common/utils/otp/otp.js";
 import { sendEmail } from "../../common/utils/emailServices/email.services.js";
+import {
+  set,
+  createRevokeKey,
+  ttl,
+  get,
+  redis_Delete,
+} from "../../database/redis.service.js";
+import { event } from "../../common/utils/emailServices/email.events.js";
+
 export const signup = async (data, file) => {
   let { userName, email, password, shareProfileName } = data;
   let existingUser = await findOne({ model: userModel, filter: { email } });
@@ -41,7 +51,29 @@ export const signup = async (data, file) => {
       shareProfileName,
     },
   });
+  event.emit("verifyEmail", { userId: newUser._id, email });
   return newUser;
+};
+
+export const verifySignin = async ({ email, code }) => {
+  let user = await findOne({ model: userModel, filter: { email } });
+  if (!user) {
+    return NotFoundException({ message: "user not found" });
+  }
+  if (user.isVerified) {
+    return ConflictException({ message: "user already verified" });
+  }
+  let otp = await get(`otp::${user._id}`);
+  if (await compareHash(code, otp)) {
+    user = await findOneAndUpdate({
+      model: userModel,
+      filter: { _id: user._id },
+      update: { isVerified: true },
+      options: { new: true },
+    });
+  } else {
+    return UnauthorizedException({ message: "invalid code" });
+  }
 };
 
 export const login = async (data, issuer) => {
@@ -214,9 +246,14 @@ export const forgetPassword = async (email) => {
     throw NotFoundException({ message: "User not found" });
   }
   const otp = generateOTP();
-  user.otpCode = otp;
-  user.otpExpires = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
-  await user.save();
+  // user.otpCode = otp;
+  // user.otpExpires = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+  set({
+    key: `otp::${user._id}`,
+    value: await generateHash(otp),
+    ttl: 5 * 60,
+  });
+  // await user.save();
   await sendEmail(
     user.email,
     "Password Reset OTP",
@@ -225,28 +262,62 @@ export const forgetPassword = async (email) => {
   return true;
 };
 
-export const verifyResetOTP = async (email, otp) => {
+export const verifyResetOTP = async (email, password, otp) => {
   const user = await userModel.findOne({ email });
-  if (!user || user.otpCode !== otp) {
-    throw BadRequestException({ message: "Invalid OTP" });
+  if (!user) {
+    throw BadRequestException({ message: "USER NOT FOUND" });
   }
-  if (user.otpExpires < Date.now()) {
-    throw BadRequestException({ message: "OTP expired" });
+  let hashedOTP = await get(`otp::${user._id}`);
+  if (await compareHash(otp, hashedOTP)) {
+    if (await compareHash(password, user.password)) {
+      throw BadRequestException({
+        message: "New password should not match old password",
+      });
+    } else {
+      let hashedPasssword = await generateHash(password);
+      let updatedUser = await findOneAndUpdate({
+        model: userModel,
+        filter: { _id: user._id },
+        update: { password: hashedPasssword },
+        options: { new: true },
+      });
+      if (updatePassword) {
+        await redis_Delete(`otp::${user._id}`);
+      }
+      return updatedUser;
+    }
+  } else {
+    throw BadRequestException({
+      message: "Incorrect otp",
+    });
   }
+
+  // if (!user || user.otpCode !== otp) {
+  //   throw BadRequestException({ message: "Invalid OTP" });
+  // }
+  // if (user.otpExpires < Date.now()) {
+  //   throw BadRequestException({ message: "OTP expired" });
+  // }
   return true;
 };
 
-export const resetPassword = async (email, otp, newPassword) => {
-  const user = await userModel.findOne({ email });
-  if (!user || user.otpCode !== otp) {
-    throw BadRequestException({ message: "Invalid OTP" });
-  }
-  if (user.otpExpires < Date.now()) {
-    throw BadRequestException({ message: "OTP expired" });
-  }
-  user.password = await generateHash(newPassword);
-  user.otpCode = null;
-  user.otpExpires = null;
-  await user.save();
-  return true;
+// export const resetPassword = async (email, otp, newPassword) => {
+//   const user = await userModel.findOne({ email });
+//   if (!user || user.otpCode !== otp) {
+//     throw BadRequestException({ message: "Invalid OTP" });
+//   }
+//   if (user.otpExpires < Date.now()) {
+//     throw BadRequestException({ message: "OTP expired" });
+//   }
+//   user.password = await generateHash(newPassword);
+//   user.otpCode = null;
+//   user.otpExpires = null;
+//   await user.save();
+//   return true;
+// };
+
+export const logout = async (req) => {
+  let redisKey = createRevokeKey(req);
+
+  await set({ key: redisKey, value: 1, ttl: req.decoded.iat + 30 * 60 });
 };

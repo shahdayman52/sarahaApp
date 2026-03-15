@@ -11,7 +11,9 @@ import {
   updatePassword,
   forgetPassword,
   verifyResetOTP,
-  resetPassword,
+  // resetPassword,
+  logout,
+  verifySignin,
 } from "./auth.service.js";
 import { BadRequestException, successResponse } from "../../common/index.js";
 import { auth } from "../../common/middleware/auth.js";
@@ -35,6 +37,15 @@ router.post(
     });
   },
 );
+router.post("/verify", async (req, res) => {
+  let data = await verifySignin(req.body);
+  successResponse({
+    res,
+    message: "user verified successfully",
+    status: 200,
+    data,
+  });
+});
 router.post("/login", validation(loginSchema), async (req, res) => {
   let loginUser = await login(req.body, `${req.protocol}://${req.host}`);
   successResponse({
@@ -53,7 +64,6 @@ router.get("/get-user-by-id", auth, async (req, res) => {
 router.get("/generate-access-token", async (req, res) => {
   let { authorization } = req.headers;
   let accessToken = await generateAccessToken(authorization);
-
   return successResponse({
     res,
     message: "access token generated successfully",
@@ -116,22 +126,38 @@ router.post("/forget-password", async (req, res) => {
   });
 });
 
-router.post("/verify-reset-otp", async (req, res) => {
-  const result = await verifyResetOTP(req.body.email, req.body.otp);
+router.post("/reset-password", async (req, res) => {
+  const result = await verifyResetOTP(
+    req.body.email,
+    req.body.password,
+    req.body.otp,
+  );
   successResponse({
     res,
-    message: "OTP verified",
+    message: "password reset successfully",
     data: result,
   });
 });
 
-router.post("/reset-password", async (req, res) => {
-  const { email, otp, newPassword } = req.body;
-  const result = await resetPassword(email, otp, newPassword);
-  successResponse({
+// router.post("/reset-password", async (req, res) => {
+//   const result = await resetPassword(
+//     req.bodyemail,
+//     req.body.password,
+//     req.body.otp,
+//   );
+//   successResponse({
+//     res,
+//     message: "Password reset successfully",
+//     data: result,
+//   });
+// });
+
+router.post("/logout", auth, async (req, res) => {
+  await logout(req);
+  return successResponse({
     res,
-    message: "Password reset successfully",
-    data: result,
+    message: "user logged out successfully",
+    status: 200,
   });
 });
 export default router;
